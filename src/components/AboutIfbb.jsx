@@ -4,7 +4,7 @@ import AboutImg from "../assets/about.jpg"
 const AboutIfbb = () => {
 
     const about = [{
-        title: "About IFFB Academy",
+        title: "About IFBB Academy",
         desc: "The International Federation of Bodybuilding and Fitness (IFBB) is the world’s leading organization dedicated to the promotion and development of bodybuilding and fitness as a sport and lifestyle. Founded in 1946, the IFBB now includes over 200 affiliated national federations across the globe, organizing hundreds of events each year, including world-renowned championships and pro-qualifier contests."
     }, {
        

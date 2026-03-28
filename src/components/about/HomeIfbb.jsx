@@ -4,7 +4,7 @@ import AboutImg from "/about2.png"
 const HomeIfbb = () => {
 
     const about = [{
-        title: "About IFFB Academy",
+        title: "About IFBB Academy",
         desc: "IFBB Australia is the official Australian branch of the International Federation of Bodybuilding and Fitness. It oversees bodybuilding and fitness competitions across the country and promotes professional standards in training and coaching. IFBB Australia also offers internationally recognized certifications for personal trainers and fitness professionals, making it a trusted name in the Australian fitness industry."
     },]
     return (
