@@ -14,8 +14,8 @@ const EnrollmentCallToAction = () => {
       <p className=" md:text-2xl mb-3">
         To know more about the Certifications{' '}
         <a
-          href="#certifications"
-          className="text-blue-700 font-medium underline"
+      onClick={()=>naviagte("/certificates")}    
+      className="text-blue-700 font-medium underline"
         >
           Please Check
         </a>
@@ -23,7 +23,7 @@ const EnrollmentCallToAction = () => {
       <p className="text-2xl font-medium mb-6">
         👉 Register now to secure your spot ...
       </p>
-      <button className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-6 py-2 rounded shadow transition" onClick={()=>naviagte("/course")}>
+      <button className="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-6 py-2 rounded shadow transition" onClick={()=>naviagte("/signup")}>
         Register Now
       </button>
     </section>
