@@ -16,7 +16,7 @@ const FooterBanner = () => {
                 <p className="text-center max-w-xl sm:text-sm text-xs">Join FitLife Studio Today and Transform Your Life with Expert Guidance, Personalized Programs, and a Supportive Community. Your Fitness Journey Starts Now!</p>
 
                 <form action="" className='flex items-center gap-2 sm:gap-4 py-4 sm:text-base text-sm'>
-                    <input type="text" placeholder="Enter your email" className='rounded-sm px-4 py-2 text-black bg-white'/>
+                    {/* <input type="text" placeholder="Enter your email" className='rounded-sm px-4 py-2 text-black bg-white'/> */}
                     <button className="px-4 py-2 bg-[#2424B9] font-semibold text-white rounded-sm flex gap-2 items-center w-fit ">Join Now</button>
 
                 </form>
