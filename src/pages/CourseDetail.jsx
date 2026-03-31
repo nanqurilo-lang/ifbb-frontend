@@ -16,6 +16,7 @@ const CourseDetail = () => {
   const [unlockedUpto, setUnlockedUpto] = useState(-1);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [error, setError] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   // PDF Viewer State
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -36,13 +37,22 @@ const CourseDetail = () => {
   const [examResults, setExamResults] = useState(null);
   const [completingModule, setCompletingModule] = useState(null);
 
+  // ==================== RATING STATES ====================
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState("");
+
   // Check login status on mount
   useEffect(() => {
     const token = localStorage.getItem("user-auth-token");
     const email = localStorage.getItem("user-email");
+    const storedUserId = localStorage.getItem("user-id");
 
     if (token && email && email !== "user@example.com") {
       setIsLoggedIn(true);
+      if (storedUserId) setUserId(storedUserId);
       fetchCourseData();
     } else {
       setIsLoggedIn(false);
@@ -78,6 +88,12 @@ const CourseDetail = () => {
       const courseContent = res.data.course;
       const purchased = Boolean(res.data.hasPurchased);
       const unlocked = res.data.unlockedUpto !== undefined ? res.data.unlockedUpto : -1;
+
+      if (res.data.userId) {
+        setUserId(res.data.userId);
+        localStorage.setItem("user-id", res.data.userId);
+      }
+
       if (courseContent && courseContent.modules) {
         const updatedModules = courseContent.modules.map((module, index) => ({
           ...module,
@@ -108,7 +124,6 @@ const CourseDetail = () => {
     }
   };
 
-  // Fetch review data for a specific module
   const fetchReviewData = async (moduleIndex) => {
     if (!courseData?.modules[moduleIndex]) return;
 
@@ -131,8 +146,6 @@ const CourseDetail = () => {
             ...prev,
             [moduleIndex]: response.data,
           }));
-        } else {
-          console.log(`Score ${score}% is below 60%, not showing review`);
         }
       }
     } catch (err) {
@@ -147,7 +160,6 @@ const CourseDetail = () => {
       alert("Payment canceled. You can try purchasing again.");
     }
     if (searchParams.get("session_id")) {
-      console.log("✅ Payment successful! Refreshing course data...");
       setTimeout(() => {
         fetchCourseData();
       }, 1000);
@@ -161,7 +173,6 @@ const CourseDetail = () => {
       });
       return;
     }
-
 
     if (index <= unlockedUpto || hasPurchased) {
       setOpenIndex(openIndex === index ? null : index);
@@ -232,12 +243,10 @@ const CourseDetail = () => {
 
     try {
       const token = localStorage.getItem("user-auth-token");
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/api/user/course/${id}/module/${module._id}/complete`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       alert("✅ Module marked as complete!");
       await fetchCourseData();
@@ -281,10 +290,7 @@ const CourseDetail = () => {
   };
 
   const handleAnswerSelect = (optionIndex) => {
-    setSelectedAnswers({
-      ...selectedAnswers,
-      [currentQuestionIndex]: optionIndex,
-    });
+    setSelectedAnswers({ ...selectedAnswers, [currentQuestionIndex]: optionIndex });
   };
 
   const handleNextQuestion = () => {
@@ -313,19 +319,14 @@ const CourseDetail = () => {
     if (!courseData || currentModuleIndex === null || !isLoggedIn) return;
 
     const currentModule = courseData.modules[currentModuleIndex];
-
-    // Build answers array for backend
     const answersArray = [];
+
     for (let i = 0; i < currentModule.test.questions.length; i++) {
       if (selectedAnswers[i] !== undefined) {
-        answersArray.push({
-          questionIndex: i,
-          selectedOptionIndex: selectedAnswers[i],
-        });
+        answersArray.push({ questionIndex: i, selectedOptionIndex: selectedAnswers[i] });
       }
     }
 
-    // Check if all questions are answered
     if (answersArray.length < currentModule.test.questions.length) {
       const unanswered = currentModule.test.questions.length - answersArray.length;
       if (!confirm(`You have ${unanswered} unanswered question(s). Do you want to submit anyway?`)) {
@@ -338,12 +339,9 @@ const CourseDetail = () => {
     try {
       const token = localStorage.getItem("user-auth-token");
       const moduleId = courseData.modules[currentModuleIndex]._id;
-      const payload = {
-        answers: answersArray,
-      };
       const response = await axios.post(
         `${API_URL}/api/user/course/${id}/module/${moduleId}/test`,
-        payload,
+        { answers: answersArray },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -353,12 +351,11 @@ const CourseDetail = () => {
       );
 
       const backendResult = response.data;
-
       const detailedResults = [];
+
       for (let i = 0; i < currentModule.test.questions.length; i++) {
         const question = currentModule.test.questions[i];
         const userAnswer = selectedAnswers[i];
-
         if (userAnswer !== undefined) {
           detailedResults.push({
             questionIndex: i,
@@ -369,7 +366,6 @@ const CourseDetail = () => {
         }
       }
 
-      // Set exam results from backend
       setExamResults({
         passed: backendResult.passed,
         percentage: backendResult.score,
@@ -384,7 +380,6 @@ const CourseDetail = () => {
       if (backendResult.passed) {
         alert("Congratulations! You passed the exam! Next module unlocked!");
         setTimeout(async () => {
-          console.log("🔄Refreshing course data...");
           await fetchCourseData();
           setExamMode(false);
           setCurrentModuleIndex(null);
@@ -393,21 +388,12 @@ const CourseDetail = () => {
           setExamSubmitted(false);
           setExamResults(null);
           setSkippedQuestions(new Set());
-
-          console.log("Course data updated!");
         }, 2000);
       } else {
-        alert(
-          `❌ You scored ${backendResult.score}%. You need ${backendResult.passPercentage}% to pass. Please try again.`
-        );
+        alert(`❌ You scored ${backendResult.score}%. You need ${backendResult.passPercentage}% to pass. Please try again.`);
       }
     } catch (error) {
       console.error("❌ ERROR SUBMITTING EXAM");
-      console.error("Message:", error.message);
-      console.error("Status:", error.response?.status);
-      console.error("Data:", error.response?.data);
-
-      // Show detailed error
       if (error.response?.status === 500) {
         alert("Backend Error 500. Check browser console and backend logs for details.");
       } else if (error.response?.status === 400) {
@@ -420,6 +406,65 @@ const CourseDetail = () => {
       }
     } finally {
       setExamLoading(false);
+    }
+  };
+
+  // ==================== RATING SUBMIT ====================
+  const handleRatingSubmit = async () => {
+    if (selectedRating === 0) {
+      alert("Please select a star rating before submitting.");
+      return;
+    }
+
+    const token = localStorage.getItem("user-auth-token");
+    let extractedUserId = userId || localStorage.getItem("user-id");
+
+    if (!extractedUserId && token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        extractedUserId = payload._id || payload.id || payload.userId || payload.sub;
+      } catch (e) {
+        console.error("Token decode error:", e);
+      }
+    }
+
+    if (!extractedUserId) {
+      alert("User ID not found. Please login again.");
+      navigate("/login");
+      return;
+    }
+
+    setRatingLoading(true);
+    setRatingMessage("");
+
+    try {
+      const response = await axios.post(
+        `https://api.ifbb.qurilo.com/api/user/course/user-rating`,
+        {
+          user_id: extractedUserId,
+          course_id: id,
+          value: selectedRating,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data?.success) {
+        setRatingSubmitted(true);
+        setRatingMessage(
+          `✅ Rating submitted! Average: ${response.data.data.averageRating} (${response.data.data.totalRatings} ratings)`
+        );
+      }
+    } catch (err) {
+      console.error("❌ Rating error:", err);
+      const msg = err.response?.data?.message || "Failed to submit rating. Please try again.";
+      setRatingMessage(`❌ ${msg}`);
+    } finally {
+      setRatingLoading(false);
     }
   };
 
@@ -476,10 +521,9 @@ const CourseDetail = () => {
                 {result?.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 rounded border-2 ${item.isCorrect
-                      ? "bg-green-50 border-green-300"
-                      : "bg-red-50 border-red-300"
-                      }`}
+                    className={`p-4 rounded border-2 ${
+                      item.isCorrect ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-1">
@@ -494,10 +538,7 @@ const CourseDetail = () => {
                           Q{idx + 1}: {item.question}
                         </p>
                         <div className="space-y-2">
-                          <p
-                            className={`text-sm font-medium ${item.isCorrect ? "text-green-700" : "text-red-700"
-                              }`}
-                          >
+                          <p className={`text-sm font-medium ${item.isCorrect ? "text-green-700" : "text-red-700"}`}>
                             Your Answer:{" "}
                             <span className="font-bold">
                               {item.options[item.userSelectedOptionIndex]}
@@ -534,31 +575,23 @@ const CourseDetail = () => {
               <FaSignInAlt className="text-blue-600 text-5xl" />
             </div>
           </div>
-
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Please Login</h2>
           <p className="text-gray-600 mb-8">
             You need to login to view course details and access course content.
           </p>
-
           <div className="space-y-3">
             <button
-              onClick={() =>
-                navigate("/login", {
-                  state: { from: `/course/${id}` },
-                })
-              }
+              onClick={() => navigate("/login", { state: { from: `/course/${id}` } })}
               className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 flex items-center justify-center gap-2"
             >
               <FaSignInAlt /> Login
             </button>
-
             <button
               onClick={() => navigate("/signup")}
               className="w-full py-3 px-6 bg-gray-200 text-gray-900 font-bold rounded hover:bg-gray-300 transition"
             >
               Create Account
             </button>
-
             <button
               onClick={() => navigate("/")}
               className="w-full py-3 px-6 bg-gray-100 text-gray-700 font-bold rounded hover:bg-gray-200 transition"
@@ -591,10 +624,8 @@ const CourseDetail = () => {
               <FaTimesCircle className="text-red-600 text-5xl" />
             </div>
           </div>
-
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Course Not Found</h2>
           <p className="text-gray-600 mb-8">{error || "The course you're looking for doesn't exist."}</p>
-
           <button
             onClick={() => navigate("/")}
             className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded hover:from-blue-700 hover:to-indigo-700 transition"
@@ -611,7 +642,7 @@ const CourseDetail = () => {
     description,
     courseThumbnail,
     discountedPrice,
-     actual_price,
+    actual_price,
     price,
     durationToComplete,
     modules = [],
@@ -621,19 +652,16 @@ const CourseDetail = () => {
 
   const averageRating =
     ratings.length > 0
-      ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1)
-      : "No ratings";
+      ? (ratings.reduce((sum, r) => sum + (r.value || 0), 0) / ratings.length).toFixed(1)
+      : "0.0";
 
   // ==================== PDF VIEWER MODAL ====================
   if (pdfUrl) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded w-full max-w-6xl h-[90vh] flex flex-col">
-          {/* Header */}
           <div className="flex justify-between items-center p-1 border-b bg-gradient-to-r from-blue-600 to-indigo-600 rounded">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              {/* <FaBook /> PDF Viewer */}
-            </h3>
+            <h3 className="text-xl font-bold text-white flex items-center gap-2"></h3>
             <button
               onClick={closePdfViewer}
               className="bg-white text-red-600 p-2 rounded hover:bg-red-50 transition font-bold flex items-center gap-2"
@@ -641,8 +669,6 @@ const CourseDetail = () => {
               <FaTimes />
             </button>
           </div>
-
-          {/* PDF Content */}
           <div className="flex-1 overflow-hidden">
             <iframe
               src={pdfUrl}
@@ -654,9 +680,7 @@ const CourseDetail = () => {
               }}
             />
           </div>
-
-          {/* Footer */}
-          <div className="p-3 border-t bg-gray-50 rounded- flex justify-between items-center">
+          <div className="p-3 border-t bg-gray-50 flex justify-between items-center">
             <p className="text-sm text-gray-600">💡 Tip: Use browser zoom controls if text is too small</p>
             <a
               href={pdfUrl}
@@ -684,12 +708,13 @@ const CourseDetail = () => {
       return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-8 px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded  overflow-hidden">
+            <div className="bg-white rounded overflow-hidden">
               <div
-                className={`p-8 text-white ${examResults.passed
-                  ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                  : "bg-gradient-to-r from-red-500 to-orange-500"
-                  }`}
+                className={`p-8 text-white ${
+                  examResults.passed
+                    ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                    : "bg-gradient-to-r from-red-500 to-orange-500"
+                }`}
               >
                 <div className="text-center">
                   <div className="mb-4">
@@ -810,9 +835,7 @@ const CourseDetail = () => {
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
                   className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{
-                    width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`,
-                  }}
+                  style={{ width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }}
                 ></div>
               </div>
             </div>
@@ -822,14 +845,15 @@ const CourseDetail = () => {
                 <button
                   key={idx}
                   onClick={() => setCurrentQuestionIndex(idx)}
-                  className={`w-8 h-8 rounded-full font-bold text-sm transition ${idx === currentQuestionIndex
-                    ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                    : selectedAnswers[idx] !== undefined
+                  className={`w-8 h-8 rounded-full font-bold text-sm transition ${
+                    idx === currentQuestionIndex
+                      ? "bg-blue-600 text-white ring-2 ring-blue-300"
+                      : selectedAnswers[idx] !== undefined
                       ? "bg-green-500 text-white hover:bg-green-600"
                       : skippedQuestions.has(idx)
-                        ? "bg-yellow-400 text-gray-900 hover:bg-yellow-500"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
+                      ? "bg-yellow-400 text-gray-900 hover:bg-yellow-500"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
                 >
                   {idx + 1}
                 </button>
@@ -846,10 +870,11 @@ const CourseDetail = () => {
                 {currentQuestion?.options?.map((option, optionIdx) => (
                   <label
                     key={optionIdx}
-                    className={`flex items-center p-4 border-2 rounded cursor-pointer transition ${selectedAnswers[currentQuestionIndex] === optionIdx
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-white hover:border-blue-300"
-                      }`}
+                    className={`flex items-center p-4 border-2 rounded cursor-pointer transition ${
+                      selectedAnswers[currentQuestionIndex] === optionIdx
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 bg-white hover:border-blue-300"
+                    }`}
                   >
                     <input
                       type="radio"
@@ -888,9 +913,7 @@ const CourseDetail = () => {
                   className="px-2 py-2 bg-green-600 text-white text-sm rounded font-bold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
                 >
                   {examLoading ? (
-                    <>
-                      <FaSpinner className="animate-spin" /> Submitting...
-                    </>
+                    <><FaSpinner className="animate-spin" /> Submitting...</>
                   ) : (
                     <> Submit Exam</>
                   )}
@@ -915,23 +938,24 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-4 px-2">
       <div className="max-w-[1400px] mx-auto">
         <div className="flex flex-col lg:flex-row gap-8">
+
           {/* Left - Course Details */}
           <div className="w-full lg:w-1/2">
             <div className="bg-white rounded overflow-hidden shadow">
               <div className="relative h-[400px] bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
-                      <span className="bg-red-600 text-white text-sm m-1 absolute rounded border-none outline-none p-1">
-        {parseInt(discountedPrice)}%
-      </span>
+                <span className="bg-red-600 text-white text-sm m-1 absolute rounded border-none outline-none p-1">
+                  {parseInt(discountedPrice)}%
+                </span>
                 <img
                   src={courseThumbnail}
                   alt={title}
-                  className="w-full h-full object-cover  transition-transform duration-500"
+                  className="w-full h-full object-cover transition-transform duration-500"
                   onError={(e) => {
-                    e.target.src =
-                      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
+                    e.target.src = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
                   }}
                 />
               </div>
+
               <div className="p-6 space-y-5">
                 <h2 className="text-sm font-bold text-gray-900">{title}</h2>
 
@@ -952,20 +976,15 @@ const CourseDetail = () => {
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-sm text-base leading-relaxed">{description}</p>
+                <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
 
                 <div className="border-t pt-2 space-y-3">
                   <div className="flex items-center gap-3">
                     <p className="text-sm font-bold line-through text-green-600">
-                      {/* ${price} */}
                       ${actual_price?.$numberDecimal}
                     </p>
-
                     {discountedPrice && (
-                      <p className="text-sm text-gray-500">
-                        {/* ${actual_price?.$numberDecimal} */}
-                         ${price}
-                      </p>
+                      <p className="text-sm text-gray-500">${price}</p>
                     )}
                   </div>
                   <p className="text-gray-700 text-sm font-medium">
@@ -973,35 +992,95 @@ const CourseDetail = () => {
                   </p>
                 </div>
 
+                {/* ==================== RATING SECTION ====================
+                    Sirf tab dikhega jab hasPurchased === true ho
+                ======================================================== */}
+                {hasPurchased && (
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-bold text-gray-800 mb-2">Rate This Course</p>
+
+                    {ratingSubmitted ? (
+                      <div className="p-3 bg-green-50 border border-green-300 rounded text-center">
+                        <p className="text-green-700 font-semibold text-sm">{ratingMessage}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setSelectedRating(star)}
+                              onMouseEnter={() => setHoveredRating(star)}
+                              onMouseLeave={() => setHoveredRating(0)}
+                              className="focus:outline-none transition-transform hover:scale-110"
+                              aria-label={`Rate ${star} star`}
+                            >
+                              <FaStar
+                                className={`text-2xl transition-colors ${
+                                  star <= (hoveredRating || selectedRating)
+                                    ? "text-orange-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            </button>
+                          ))}
+                          {selectedRating > 0 && (
+                            <span className="ml-2 text-sm font-semibold text-orange-500">
+                              {selectedRating}/5
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={handleRatingSubmit}
+                          disabled={ratingLoading}
+                          className={`w-full py-2 px-4 text-sm font-bold rounded transition flex items-center justify-center gap-2 ${
+                            ratingLoading
+                              ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                              : "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
+                          }`}
+                        >
+                          {ratingLoading ? (
+                            <><FaSpinner className="animate-spin" /> Submitting...</>
+                          ) : (
+                            <><FaStar /> Submit Rating</>
+                          )}
+                        </button>
+
+                        {ratingMessage && !ratingSubmitted && (
+                          <p className="text-red-600 text-xs font-medium text-center">
+                            {ratingMessage}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* ==================== END RATING SECTION ==================== */}
+
                 {!hasPurchased ? (
                   <button
                     onClick={handlePurchase}
                     disabled={isPurchaseLoading}
-                    className={`w-full mt-6 py-3 px-4 font-bold text-sm rounded shadow-lg flex items-center justify-center gap-3 transition-all ${isPurchaseLoading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl cursor-pointer text-white"
-                      }`}
+                    className={`w-full mt-6 py-3 px-4 font-bold text-sm rounded shadow-lg flex items-center justify-center gap-3 transition-all ${
+                      isPurchaseLoading
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl cursor-pointer text-white"
+                    }`}
                   >
                     {isPurchaseLoading ? (
-                      <>
-                        <FaSpinner className="animate-spin" size={24} /> Processing...
-                      </>
+                      <><FaSpinner className="animate-spin" size={24} /> Processing...</>
                     ) : (
-                      <>
-                        <span className="text-sm"></span> Purchase Now
-                      </>
+                      <><span className="text-sm"></span> Purchase Now</>
                     )}
                   </button>
                 ) : (
                   <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border-2 flex items-center justify-center border-green-300 rounded">
                     <div className="flex items-center gap-4 text-green-700">
-                      {/* <FaUnlock size={20} className="text-green-600" /> */}
-                      <div>
-                        <p className="font-bold flex items-center justify-center text-sm">Course Unlocked!</p>
-                        {/* <p>
-                          You have access to {unlockedUpto + 1} out of {modules.length} modules
-                        </p> */}
-                      </div>
+                      <p className="font-bold flex items-center justify-center text-sm">
+                        Course Unlocked!
+                      </p>
                     </div>
                   </div>
                 )}
@@ -1032,12 +1111,13 @@ const CourseDetail = () => {
                     return (
                       <div
                         key={module._id}
-                        className={`border-2 text-sm rounded px-3 py-2 transition-all ${isLocked
-                          ? "border-gray-200 text-sm opacity-70 cursor-not-allowed"
-                          : isActive
-                            ? "border-blue-300 text-sm bg-blue-50 cursor-pointer hover:border-blue-400 hover:bg-blue-100"
-                            : "border-gray-200 text-sm hover:border-gray-300 cursor-default"
-                          }`}
+                        className={`border-2 text-sm rounded px-3 py-2 transition-all ${
+                          isLocked
+                            ? "border-gray-200 opacity-70 cursor-not-allowed"
+                            : isActive
+                            ? "border-blue-300 bg-blue-50 cursor-pointer hover:border-blue-400 hover:bg-blue-100"
+                            : "border-gray-200 hover:border-gray-300 cursor-default"
+                        }`}
                       >
                         <div
                           className="flex text-sm justify-between items-center"
@@ -1045,24 +1125,16 @@ const CourseDetail = () => {
                         >
                           <div className="flex text-sm items-center gap-4 flex-1">
                             <span
-                              className={`w-10 h-10 text-sm rounded-full flex items-center justify-center text-white font-bold ${isLocked ? "bg-gray-400" : "bg-blue-600"
-                                }`}
+                              className={`w-10 h-10 text-sm rounded-full flex items-center justify-center text-white font-bold ${
+                                isLocked ? "bg-gray-400" : "bg-blue-600"
+                              }`}
                             >
                               {index + 1}
                             </span>
-
                             <div className="flex-1">
-                              <p
-                                className={`font-semibold ${isLocked ? "text-gray-500" : "text-gray-900"
-                                  }`}
-                              >
+                              <p className={`font-semibold ${isLocked ? "text-gray-500" : "text-gray-900"}`}>
                                 {module.title}
                               </p>
-                              {/* <p className="text-sm text-sm text-gray-500">
-                                {hasTest
-                                  ? `${module.test.questions.length} Questions`
-                                  : "No Exam"}
-                              </p> */}
                               <p className="text-sm mt-1">
                                 {index <= unlockedUpto ? (
                                   <span className="text-green-600 text-sm">✅ Unlocked</span>
@@ -1089,36 +1161,32 @@ const CourseDetail = () => {
 
                         {isActive && isExpanded && (
                           <div className="mt-4 text-sm border-t pt-4 space-y-4">
-                            {/* <p className="text-gray-700">{module.description}</p> */}
-
-                            {/* PDF Button */}
                             {module.assetLink &&
                               (Array.isArray(module.assetLink)
                                 ? module.assetLink.map((pdf, pdfIndex) => (
-                                  <button
-                                    key={pdfIndex}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPdfUrl(`${pdf}#toolbar=0&navpanes=0&scrollbar=0`);
-                                    }}
-                                    className="w-full bg-blue-600 text-white text-sm px-2 py-3 rounded hover:bg-blue-700 transition font-bold mb-2"
-                                  >
-                                    Read Module Content {pdfIndex + 1}
-                                  </button>
-                                ))
+                                    <button
+                                      key={pdfIndex}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPdfUrl(`${pdf}#toolbar=0&navpanes=0&scrollbar=0`);
+                                      }}
+                                      className="w-full bg-blue-600 text-white text-sm px-2 py-3 rounded hover:bg-blue-700 transition font-bold mb-2"
+                                    >
+                                      Read Module Content {pdfIndex + 1}
+                                    </button>
+                                  ))
                                 : (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPdfUrl(`${module.assetLink}#toolbar=0&navpanes=0&scrollbar=0`);
-                                    }}
-                                    className="w-full bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition font-bold"
-                                  >
-                                    Read Module Content
-                                  </button>
-                                )
-                              )
-                            }
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPdfUrl(`${module.assetLink}#toolbar=0&navpanes=0&scrollbar=0`);
+                                      }}
+                                      className="w-full bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition font-bold"
+                                    >
+                                      Read Module Content
+                                    </button>
+                                  )
+                              )}
 
                             {hasTest && (
                               <button
@@ -1132,7 +1200,6 @@ const CourseDetail = () => {
                               </button>
                             )}
 
-                            {/* Review Section - Only show if score >= 60% */}
                             {loadingReview[index] && (
                               <div className="mt-4 p-4 bg-gray-50 rounded flex items-center justify-center gap-2">
                                 <FaSpinner className="animate-spin text-blue-600" />
@@ -1156,44 +1223,9 @@ const CourseDetail = () => {
                   })}
                 </div>
               )}
-
-              {/* {hasPurchased && modules.length > 0 && (
-                <div className="mt-8 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-gray-800">Your Progress</p>
-                      <p className="text-sm text-gray-600">
-                        {unlockedUpto + 1} of {modules.length} modules unlocked
-                      </p>
-                    </div>
-                    <div className="w-15 h-15 relative">
-                      <svg className="w-full h-full" viewBox="0 0 36 36">
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="#E5E7EB"
-                          strokeWidth="3"
-                        />
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="#3B82F6"
-                          strokeWidth="3"
-                          strokeDasharray={`${((unlockedUpto + 1) / modules.length) * 100
-                            }, 100`}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-sm font-bold text-blue-600">
-                          {Math.round(((unlockedUpto + 1) / modules.length) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )} */}
             </div>
           </div>
+
         </div>
       </div>
     </div>

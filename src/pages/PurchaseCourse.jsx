@@ -32,10 +32,18 @@ function CourseCard({
   actual_price,
   isPurchased = false
 }) {
+  // const rating =
+  //   ratings?.length
+  //     ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+  //     : "0.0";
+
   const rating =
-    ratings?.length
-      ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
-      : "0.0";
+  ratings.length > 0
+    ? (
+        ratings.reduce((sum, r) => sum + (r.value || 0), 0) /
+        ratings.length
+      ).toFixed(1)
+    : "0.0";
 
   return (
     <div className="border border-indigo-400 rounded p-3 w-full max-w-[300px] flex flex-col items-start shadow-sm bg-white">
