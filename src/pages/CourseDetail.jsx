@@ -521,9 +521,8 @@ const CourseDetail = () => {
                 {result?.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 rounded border-2 ${
-                      item.isCorrect ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
-                    }`}
+                    className={`p-4 rounded border-2 ${item.isCorrect ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-1">
@@ -710,11 +709,10 @@ const CourseDetail = () => {
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded overflow-hidden">
               <div
-                className={`p-8 text-white ${
-                  examResults.passed
+                className={`p-8 text-white ${examResults.passed
                     ? "bg-gradient-to-r from-green-500 to-emerald-500"
                     : "bg-gradient-to-r from-red-500 to-orange-500"
-                }`}
+                  }`}
               >
                 <div className="text-center">
                   <div className="mb-4">
@@ -845,15 +843,14 @@ const CourseDetail = () => {
                 <button
                   key={idx}
                   onClick={() => setCurrentQuestionIndex(idx)}
-                  className={`w-8 h-8 rounded-full font-bold text-sm transition ${
-                    idx === currentQuestionIndex
+                  className={`w-8 h-8 rounded-full font-bold text-sm transition ${idx === currentQuestionIndex
                       ? "bg-blue-600 text-white ring-2 ring-blue-300"
                       : selectedAnswers[idx] !== undefined
-                      ? "bg-green-500 text-white hover:bg-green-600"
-                      : skippedQuestions.has(idx)
-                      ? "bg-yellow-400 text-gray-900 hover:bg-yellow-500"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
+                        ? "bg-green-500 text-white hover:bg-green-600"
+                        : skippedQuestions.has(idx)
+                          ? "bg-yellow-400 text-gray-900 hover:bg-yellow-500"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
                 >
                   {idx + 1}
                 </button>
@@ -870,11 +867,10 @@ const CourseDetail = () => {
                 {currentQuestion?.options?.map((option, optionIdx) => (
                   <label
                     key={optionIdx}
-                    className={`flex items-center p-4 border-2 rounded cursor-pointer transition ${
-                      selectedAnswers[currentQuestionIndex] === optionIdx
+                    className={`flex items-center p-4 border-2 rounded cursor-pointer transition ${selectedAnswers[currentQuestionIndex] === optionIdx
                         ? "border-blue-500 bg-blue-50"
                         : "border-gray-200 bg-white hover:border-blue-300"
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -980,12 +976,18 @@ const CourseDetail = () => {
 
                 <div className="border-t pt-2 space-y-3">
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-bold line-through text-green-600">
+
+
+                    {discountedPrice && (
+                      <p className="text-sm line-through text-gray-500">${price}</p>
+                    )}
+
+                    <p className="text-sm font-bold  text-green-600">
                       ${actual_price?.$numberDecimal}
                     </p>
-                    {discountedPrice && (
+                    {/* {discountedPrice && (
                       <p className="text-sm text-gray-500">${price}</p>
-                    )}
+                    )} */}
                   </div>
                   <p className="text-gray-700 text-sm font-medium">
                     Purchased by <span className="font-bold">{total_enrolled_user}</span> users
@@ -1017,11 +1019,10 @@ const CourseDetail = () => {
                               aria-label={`Rate ${star} star`}
                             >
                               <FaStar
-                                className={`text-2xl transition-colors ${
-                                  star <= (hoveredRating || selectedRating)
+                                className={`text-2xl transition-colors ${star <= (hoveredRating || selectedRating)
                                     ? "text-orange-400"
                                     : "text-gray-300"
-                                }`}
+                                  }`}
                               />
                             </button>
                           ))}
@@ -1035,11 +1036,10 @@ const CourseDetail = () => {
                         <button
                           onClick={handleRatingSubmit}
                           disabled={ratingLoading}
-                          className={`w-full py-2 px-4 text-sm font-bold rounded transition flex items-center justify-center gap-2 ${
-                            ratingLoading
+                          className={`w-full py-2 px-4 text-sm font-bold rounded transition flex items-center justify-center gap-2 ${ratingLoading
                               ? "bg-gray-300 cursor-not-allowed text-gray-500"
                               : "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
-                          }`}
+                            }`}
                         >
                           {ratingLoading ? (
                             <><FaSpinner className="animate-spin" /> Submitting...</>
@@ -1063,11 +1063,10 @@ const CourseDetail = () => {
                   <button
                     onClick={handlePurchase}
                     disabled={isPurchaseLoading}
-                    className={`w-full mt-6 py-3 px-4 font-bold text-sm rounded shadow-lg flex items-center justify-center gap-3 transition-all ${
-                      isPurchaseLoading
+                    className={`w-full mt-6 py-3 px-4 font-bold text-sm rounded shadow-lg flex items-center justify-center gap-3 transition-all ${isPurchaseLoading
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl cursor-pointer text-white"
-                    }`}
+                      }`}
                   >
                     {isPurchaseLoading ? (
                       <><FaSpinner className="animate-spin" size={24} /> Processing...</>
@@ -1111,13 +1110,12 @@ const CourseDetail = () => {
                     return (
                       <div
                         key={module._id}
-                        className={`border-2 text-sm rounded px-3 py-2 transition-all ${
-                          isLocked
+                        className={`border-2 text-sm rounded px-3 py-2 transition-all ${isLocked
                             ? "border-gray-200 opacity-70 cursor-not-allowed"
                             : isActive
-                            ? "border-blue-300 bg-blue-50 cursor-pointer hover:border-blue-400 hover:bg-blue-100"
-                            : "border-gray-200 hover:border-gray-300 cursor-default"
-                        }`}
+                              ? "border-blue-300 bg-blue-50 cursor-pointer hover:border-blue-400 hover:bg-blue-100"
+                              : "border-gray-200 hover:border-gray-300 cursor-default"
+                          }`}
                       >
                         <div
                           className="flex text-sm justify-between items-center"
@@ -1125,9 +1123,8 @@ const CourseDetail = () => {
                         >
                           <div className="flex text-sm items-center gap-4 flex-1">
                             <span
-                              className={`w-10 h-10 text-sm rounded-full flex items-center justify-center text-white font-bold ${
-                                isLocked ? "bg-gray-400" : "bg-blue-600"
-                              }`}
+                              className={`w-10 h-10 text-sm rounded-full flex items-center justify-center text-white font-bold ${isLocked ? "bg-gray-400" : "bg-blue-600"
+                                }`}
                             >
                               {index + 1}
                             </span>
@@ -1164,28 +1161,28 @@ const CourseDetail = () => {
                             {module.assetLink &&
                               (Array.isArray(module.assetLink)
                                 ? module.assetLink.map((pdf, pdfIndex) => (
-                                    <button
-                                      key={pdfIndex}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setPdfUrl(`${pdf}#toolbar=0&navpanes=0&scrollbar=0`);
-                                      }}
-                                      className="w-full bg-blue-600 text-white text-sm px-2 py-3 rounded hover:bg-blue-700 transition font-bold mb-2"
-                                    >
-                                      Read Module Content {pdfIndex + 1}
-                                    </button>
-                                  ))
+                                  <button
+                                    key={pdfIndex}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPdfUrl(`${pdf}#toolbar=0&navpanes=0&scrollbar=0`);
+                                    }}
+                                    className="w-full bg-blue-600 text-white text-sm px-2 py-3 rounded hover:bg-blue-700 transition font-bold mb-2"
+                                  >
+                                    Read Module Content {pdfIndex + 1}
+                                  </button>
+                                ))
                                 : (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setPdfUrl(`${module.assetLink}#toolbar=0&navpanes=0&scrollbar=0`);
-                                      }}
-                                      className="w-full bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition font-bold"
-                                    >
-                                      Read Module Content
-                                    </button>
-                                  )
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPdfUrl(`${module.assetLink}#toolbar=0&navpanes=0&scrollbar=0`);
+                                    }}
+                                    className="w-full bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 transition font-bold"
+                                  >
+                                    Read Module Content
+                                  </button>
+                                )
                               )}
 
                             {hasTest && (
