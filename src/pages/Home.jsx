@@ -18,7 +18,7 @@ import CertificateHomePage from '../components/home/CertificateHomePage'
 
 const Home = () => {
   return (
-    <>
+    <main className="overflow-hidden">
     
 
         <Hero title={"TRANSFORM YOUR LIFE WITH IFBB ACADEMY"}
@@ -41,7 +41,7 @@ const Home = () => {
 
 
    
-    </>
+    </main>
   )
 }
 
