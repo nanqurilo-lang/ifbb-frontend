@@ -126,11 +126,33 @@ const CertificatesImg = () => {
 
   return (
     <div className='bg-gray-100 '>
-      <div className='h-full w-full py-10 max-w-7xl mx-auto px-8'>
-            <h1 className='text-center pb-10 text-black font-bold text-6xl'>Our Certifications</h1>
+      {/* <div className='h-full w-full py-10 max-w-7xl mx-auto px-8'> */}
+      <div className='h-full w-full py-10 max-w-7xl mx-auto px-4 sm:px-8 md:px-8'>
+
+        {/* <h1 className='text-center pb-10 text-black font-bold text-6xl'>Our Certifications</h1> */}
+
+        <h1
+          className='
+    text-center
+    pb-8
+    text-black
+    font-bold
+    text-4xl
+    sm:text-5xl
+    md:text-6xl
+    leading-tight
+    break-words
+    w-full
+    overflow-hidden
+  '
+        >
+          Our Certifications
+        </h1>
+
+
         {Object.keys(certificates).map((categoryKey) => {
           const category = certificates[categoryKey]
-          
+
           // Only render if there are images
           if (!category.images || category.images.length === 0) {
             return null
@@ -145,8 +167,8 @@ const CertificatesImg = () => {
 
               <div className='flex max-md:flex-col items-center justify-center gap-6 my-4'>
                 {category.images.map((img, index) => (
-                  <div 
-                    key={img.id || index} 
+                  <div
+                    key={img.id || index}
                     className='w-full max-w-sm cursor-pointer'
                     onClick={() => setSelectedImage({ url: img.url, alt: `${category.title} ${index + 1}` })}
                   >
@@ -171,11 +193,11 @@ const CertificatesImg = () => {
 
       {/* Image Viewer Modal */}
       {selectedImage && (
-        <div 
+        <div
           className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4'
           onClick={() => setSelectedImage(null)}
         >
-          <div 
+          <div
             className='relative max-w-4xl w-full max-h-[90vh] bg-white rounded-lg overflow-hidden'
             onClick={(e) => e.stopPropagation()}
           >
